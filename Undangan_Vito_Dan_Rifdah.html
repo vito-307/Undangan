@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Undangan Pernikahan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
+        .font-serif { font-family: 'Playfair Display', serif; }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        // SVG Icons
+        const HeartIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`;
+        const CalendarIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`;
+        const MapPinIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
+        const Share2Icon = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>`;
+        const Edit3Icon = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>`;
+
+        let state = {
+            isEditing: true,
+            showSuccess: false,
+            fotoPria: null,
+            fotoWanita: null,
+            formData: {
+                namaMempelaiPria: 'Ahmad Budiman',
+                namaMempelaiWanita: 'Siti Nurhaliza',
+                namaOrtuPria: 'Bapak Surya & Ibu Dewi',
+                namaOrtuWanita: 'Bapak Rahman & Ibu Sari',
+                tanggal: '25 Desember 2025',
+                waktuAkad: '09.00 WIB',
+                waktuResepsi: '11.00 - 14.00 WIB',
+                lokasi: 'Grand Ballroom Hotel Santika',
+                alamat: 'Jl. Raya Bekasi No. 123, Bekasi Timur'
+            }
+        };
+
+        function handleChange(e) {
+            state.formData[e.target.name] = e.target.value;
+        }
+
+        function handleFotoUpload(e, tipe) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    if (tipe === 'pria') {
+                        state.fotoPria = reader.result;
+                    } else {
+                        state.fotoWanita = reader.result;
+                    }
+                    render();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function generateShareableLink() {
+            const dataToSave = {
+                ...state.formData,
+                fotoPria: state.fotoPria,
+                fotoWanita: state.fotoWanita
+            };
+            const encoded = btoa(encodeURIComponent(JSON.stringify(dataToSave)));
+            const link = `${window.location.origin}${window.location.pathname}?data=${encoded}`;
+            navigator.clipboard.writeText(link);
+            state.showSuccess = true;
+            render();
+            setTimeout(() => {
+                state.showSuccess = false;
+                render();
+            }, 3000);
+        }
+
+        function loadFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            const dataParam = params.get('data');
+            if (dataParam) {
+                try {
+                    const decoded = JSON.parse(decodeURIComponent(atob(dataParam)));
+                    state.formData = {
+                        namaMempelaiPria: decoded.namaMempelaiPria || '',
+                        namaMempelaiWanita: decoded.namaMempelaiWanita || '',
+                        namaOrtuPria: decoded.namaOrtuPria || '',
+                        namaOrtuWanita: decoded.namaOrtuWanita || '',
+                        tanggal: decoded.tanggal || '',
+                        waktuAkad: decoded.waktuAkad || '',
+                        waktuResepsi: decoded.waktuResepsi || '',
+                        lokasi: decoded.lokasi || '',
+                        alamat: decoded.alamat || ''
+                    };
+                    if (decoded.fotoPria) state.fotoPria = decoded.fotoPria;
+                    if (decoded.fotoWanita) state.fotoWanita = decoded.fotoWanita;
+                    state.isEditing = false;
+                } catch (e) {
+                    console.error('Error loading data');
+                }
+            }
+        }
+
+        function renderEditForm() {
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-pink-100 via-rose-50 to-pink-100 p-4">
+                    <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl p-8">
+                        <div class="text-center mb-8">
+                            <h1 class="text-3xl font-bold text-rose-600 mb-2">Edit Undangan Prank 😂</h1>
+                            <p class="text-gray-600">Isi data palsu untuk prank teman-teman kamu!</p>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nama Mempelai Pria</label>
+                                <input type="text" name="namaMempelaiPria" value="${state.formData.namaMempelaiPria}" onchange="handleChange(event)" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Foto Mempelai Pria</label>
+                                <input type="file" accept="image/*" onchange="handleFotoUpload(event, 'pria')" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                                ${state.fotoPria ? `<div class="mt-2"><img src="${state.fotoPria}" alt="Preview" class="w-24 h-24 rounded-full object-cover mx-auto"></div>` : ''}
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nama Mempelai Wanita</label>
+                                <input type="text" name="namaMempelaiWanita" value="${state.formData.namaMempelaiWanita}" onchange="handleChange(event)" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Foto Mempelai Wanita</label>
+                                <input type="file" accept="image/*" onchange="handleFotoUpload(event, 'wanita')" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                                ${state.fotoWanita ? `<div class="mt-2"><img src="${state.fotoWanita}" alt="Preview" class="w-24 h-24 rounded-full object-cover mx-auto"></div>` : ''}
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nama Orang Tua Pria</label>
+                                <input type="text" name="namaOrtuPria" value="${state.formData.namaOrtuPria}" onchange="handleChange(event)" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nama Orang Tua Wanita</label>
+                                <input type="text" name="namaOrtuWanita" value="${state.formData.namaOrtuWanita}" onchange="handleChange(event)" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
+                                <input type="text" name="tanggal" value="${state.formData.tanggal}" onchange="handleChange(event)" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Waktu Akad Nikah</label>
+                                <input type="text" name="waktuAkad" value="${state.formData.waktuAkad}" onchange="handleChange(event)" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Waktu Resepsi</label>
+                                <input type="text" name="waktuResepsi" value="${state.formData.waktuResepsi}" onchange="handleChange(event)" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Lokasi</label>
+                                <input type="text" name="lokasi" value="${state.formData.lokasi}" onchange="handleChange(event)" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Alamat Lengkap</label>
+                                <input type="text" name="alamat" value="${state.formData.alamat}" onchange="handleChange(event)" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                            </div>
+                        </div>
+
+                        <div class="mt-8 space-y-3">
+                            <button onclick="state.isEditing = false; render();" class="w-full bg-rose-600 text-white py-3 rounded-lg font-semibold hover:bg-rose-700 transition">
+                                Preview Undangan
+                            </button>
+                            <button onclick="generateShareableLink()" class="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition flex items-center justify-center gap-2">
+                                ${Share2Icon}
+                                Generate & Copy Link untuk Dishare
+                            </button>
+                        </div>
+
+                        ${state.showSuccess ? '<div class="mt-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg text-center">✅ Link berhasil dicopy! Sekarang bisa dishare ke korban 😈</div>' : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderInvitation() {
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-pink-100 via-rose-50 to-pink-100 p-4 flex items-center justify-center">
+                    <div class="max-w-2xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden">
+                        <div class="bg-gradient-to-r from-rose-500 to-pink-500 text-white py-8 px-6 text-center relative">
+                            <div class="absolute top-4 left-4">${HeartIcon.replace('width="24"', 'width="40"').replace('height="24"', 'height="40"').replace('currentColor', 'rgba(255,255,255,0.3)')}</div>
+                            <div class="absolute top-4 right-4">${HeartIcon.replace('width="24"', 'width="40"').replace('height="24"', 'height="40"').replace('currentColor', 'rgba(255,255,255,0.3)')}</div>
+                            <p class="text-sm font-light mb-2 tracking-widest">UNDANGAN PERNIKAHAN</p>
+                            <h1 class="text-4xl font-serif mb-3">${state.formData.namaMempelaiPria}</h1>
+                            <div class="flex items-center justify-center gap-3 my-4">
+                                <div class="h-px w-12 bg-white opacity-50"></div>
+                                ${HeartIcon}
+                                <div class="h-px w-12 bg-white opacity-50"></div>
+                            </div>
+                            <h1 class="text-4xl font-serif">${state.formData.namaMempelaiWanita}</h1>
+                        </div>
+
+                        <div class="p-8 space-y-8">
+                            <div class="text-center">
+                                <p class="text-2xl font-serif text-gray-700 mb-4">بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيم</p>
+                                <p class="text-gray-600 leading-relaxed">Assalamu'alaikum Warahmatullahi Wabarakatuh</p>
+                                <p class="text-gray-600 leading-relaxed mt-4">Dengan memohon rahmat dan ridho Allah SWT, kami bermaksud menyelenggarakan pernikahan putra-putri kami:</p>
+                            </div>
+
+                            <div class="grid md:grid-cols-2 gap-8">
+                                <div class="text-center">
+                                    <div class="w-32 h-32 rounded-full bg-gradient-to-br from-rose-400 to-pink-400 mx-auto mb-4 flex items-center justify-center overflow-hidden">
+                                        ${state.fotoWanita ? `<img src="${state.fotoWanita}" alt="Mempelai Wanita" class="w-full h-full object-cover">` : '<span class="text-white text-5xl">👰</span>'}
+                                    </div>
+                                    <h3 class="text-2xl font-serif text-gray-800 mb-2">${state.formData.namaMempelaiWanita}</h3>
+                                    <p class="text-sm text-gray-600">Putri dari</p>
+                                    <p class="text-gray-700">${state.formData.namaOrtuWanita}</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="w-32 h-32 rounded-full bg-gradient-to-br from-blue-400 to-indigo-400 mx-auto mb-4 flex items-center justify-center overflow-hidden">
+                                        ${state.fotoPria ? `<img src="${state.fotoPria}" alt="Mempelai Pria" class="w-full h-full object-cover">` : '<span class="text-white text-5xl">🤵</span>'}
+                                    </div>
+                                    <h3 class="text-2xl font-serif text-gray-800 mb-2">${state.formData.namaMempelaiPria}</h3>
+                                    <p class="text-sm text-gray-600">Putra dari</p>
+                                    <p class="text-gray-700">${state.formData.namaOrtuPria}</p>
+                                </div>
+                            </div>
+
+                            <div class="bg-gradient-to-br from-rose-50 to-pink-50 rounded-2xl p-6">
+                                <div class="flex items-center justify-center gap-2 mb-4">
+                                    ${CalendarIcon.replace('currentColor', 'rgb(225, 29, 72)')}
+                                    <h3 class="text-xl font-semibold text-gray-800">Waktu Pelaksanaan</h3>
+                                </div>
+                                <div class="space-y-3 text-center">
+                                    <div>
+                                        <p class="text-gray-600 text-sm">Tanggal</p>
+                                        <p class="text-lg font-semibold text-gray-800">${state.formData.tanggal}</p>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-4 pt-2">
+                                        <div>
+                                            <p class="text-gray-600 text-sm">Akad Nikah</p>
+                                            <p class="text-gray-800 font-medium">${state.formData.waktuAkad}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-gray-600 text-sm">Resepsi</p>
+                                            <p class="text-gray-800 font-medium">${state.formData.waktuResepsi}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6">
+                                <div class="flex items-center justify-center gap-2 mb-4">
+                                    ${MapPinIcon.replace('currentColor', 'rgb(37, 99, 235)')}
+                                    <h3 class="text-xl font-semibold text-gray-800">Lokasi Acara</h3>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-lg font-semibold text-gray-800 mb-2">${state.formData.lokasi}</p>
+                                    <p class="text-gray-600">${state.formData.alamat}</p>
+                                </div>
+                            </div>
+
+                            <div class="text-center space-y-4">
+                                <p class="text-gray-600 leading-relaxed">Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir untuk memberikan do'a restu kepada kedua mempelai.</p>
+                                <p class="text-gray-700 font-medium">Atas kehadiran dan do'a restu dari Bapak/Ibu/Saudara/i, kami ucapkan terima kasih.</p>
+                                <p class="text-gray-600">Wassalamu'alaikum Warahmatullahi Wabarakatuh</p>
+                            </div>
+
+                            <div class="text-center pt-4">
+                                <p class="text-gray-600 text-sm mb-2">Hormat Kami,</p>
+                                <p class="text-gray-800 font-semibold">Keluarga Besar Kedua Mempelai</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 px-8 py-4">
+                            <button onclick="state.isEditing = true; render();" class="w-full bg-gray-600 text-white py-3 rounded-lg font-semibold hover:bg-gray-700 transition flex items-center justify-center gap-2">
+                                ${Edit3Icon}
+                                Edit Undangan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function render() {
+            const app = document.getElementById('app');
+            app.innerHTML = state.isEditing ? renderEditForm() : renderInvitation();
+        }
+
+        // Initialize
+        loadFromURL();
+        render();
+    </script>
+</body>
+</html>
